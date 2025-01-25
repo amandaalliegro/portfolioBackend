@@ -1,0 +1,53 @@
+# Logs
+logs
+*.log
+logfile
+
+# Runtime data
+pids
+*.pid
+*.seed
+*.pid.lock
+
+# Environment variables
+.env
+
+# Dependency directories
+node_modules/
+
+# Package lock files
+package-lock.json
+
+# Build output
+dist/
+build/
+
+# Debug files
+*.swp
+*.swo
+*.swn
+*.bak
+*.tmp
+
+# Operating system files
+.DS_Store
+Thumbs.db
+
+# IDE files
+.vscode/
+.idea/
+*.iml
+
+# Deployment-specific files
+Procfile
+
+# Coverage and test output
+coverage/
+*.lcov
+
+# Temporary files
+*.tmp
+*.temp
+
+# Other sensitive or auto-generated files
+.nyc_output/
