@@ -1,5 +1,6 @@
 const pool = require('../config/db'); 
 const nodemailer = require('nodemailer');
+const { getCachedAvailableSlots, slotCache } = require('../services/slotService');
 
 /**
  * Broadcasts the current slots to all connected WebSocket clients.
@@ -12,9 +13,11 @@ const nodemailer = require('nodemailer');
  */
 exports.broadcastSlots = async (req, res) => {
   try {
-    const { broadcast } = req.app.locals; // Access the broadcast function from WebSocket setup
-    const updatedSlots = await pool.query('SELECT * FROM slots'); // Fetch all slots from the database
-    broadcast(updatedSlots.rows); // Broadcast updated slots to WebSocket clients
+    const updatedSlot = req.body; // Expect updated slot data in the request body
+    const { broadcast } = req.app.locals; 
+
+    // Broadcast only the updated slot
+    broadcast([updatedSlot]);
     res.status(200).json({ message: 'Slots broadcasted successfully' });
   } catch (error) {
     console.error('Error broadcasting slots:', error); 
@@ -31,18 +34,13 @@ exports.broadcastSlots = async (req, res) => {
  * @param {Object} res - The HTTP response object.
  * @returns {Object} JSON response containing the available slots.
  */
-exports.getAvailableSlots = async (req, res) => {
+ exports.getAvailableSlots = async (req, res) => {
   try {
-    const query = `
-      SELECT slots.*, units.name AS unit_name
-      FROM slots
-      JOIN units ON slots.unit_id = units.id;
-    `;
-    const result = await pool.query(query); // Execute the query to fetch slots and unit names
-    res.status(200).json(result.rows); 
+    const slots = await getCachedAvailableSlots();
+    res.status(200).json(slots);
   } catch (error) {
-    console.error('Error fetching available slots:', error.message); 
-    res.status(500).json({ message: 'Error fetching available slots' }); 
+    console.error('Error fetching available slots:', error.message);
+    res.status(500).json({ message: 'Error fetching available slots' });
   }
 };
 
@@ -71,7 +69,7 @@ exports.bookSlot = async (req, res) => {
 
   try {
     // Check if the slot exists in the database
-    const checkResult = await pool.query('SELECT * FROM slots WHERE id = $1', [id]);
+    const checkResult = await pool.query('SELECT 1 FROM slots WHERE id = $1 LIMIT 1', [id]);
     if (checkResult.rows.length === 0) {
       return res.status(404).json({ message: 'Slot not found' }); // Respond with 404 if slot doesn't exist
     }
@@ -86,6 +84,9 @@ exports.bookSlot = async (req, res) => {
     const updatedSlots = await pool.query('SELECT * FROM slots');
     const { broadcast } = req.app.locals;
     broadcast(updatedSlots.rows);
+
+    // Update the slot cache
+    slotCache.set('available-slots', updatedSlots.rows);
 
     // Configure the email transporter for sending confirmation emails
     const transporter = nodemailer.createTransport({

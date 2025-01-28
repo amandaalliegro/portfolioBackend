@@ -3,6 +3,7 @@ const http = require('http');
 const cors = require('cors');
 const pool = require('./config/db'); // Import the database pool
 const { setupWebSocket } = require('./services/websocket');
+const { addSlotsForNextSevenDays, cleanUpExcessSlots } = require('./services/slotService');
 const githubRoutes = require('./routes/githubRoutes');
 const emailRoutes = require('./routes/emailRoutes');
 const openaiRoutes = require('./routes/openaiRoutes');
@@ -39,19 +40,39 @@ app.use('/api', openaiRoutes); // OpenAI-related routes
 app.use('/', slotRoutes); // Slot-related routes
 
 /**
- * Create HTTP server
+ * Initialize Database
  */
-const server = http.createServer(app);
+ async function initializeDatabase() {
+  try {
+    await addSlotsForNextSevenDays();
+    await cleanUpExcessSlots(); // Clean up old or duplicate slots
+    console.log('Database initialized: Slots for the next 7 days added and cleaned.');
+  } catch (error) {
+    console.error('Error initializing database:', error);
+    process.exit(1);
+  }
+}
+
 
 /**
- * Setup WebSocket server
+ * Start the server
  */
-const { broadcast } = setupWebSocket(server, pool);
-app.locals.broadcast = broadcast; // Pass the broadcast function to app locals
+async function startServer() {
+  // Initialize the database before starting the server
+  await initializeDatabase();
 
-/**
- * Start server
- */
-server.listen(port, host, () => {
-  console.log(`Server is running on http://${host}:${port}`);
-});
+  // Create HTTP server
+  const server = http.createServer(app);
+
+  // Setup WebSocket server
+  const { broadcast } = setupWebSocket(server, pool);
+  app.locals.broadcast = broadcast; // Pass the broadcast function to app locals
+
+  // Start listening for requests
+  server.listen(port, host, () => {
+    console.log(`Server is running on http://${host}:${port}`);
+  });
+}
+
+// Start the server
+startServer();

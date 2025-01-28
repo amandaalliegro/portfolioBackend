@@ -37,7 +37,7 @@ exports.generateBulletList = async (topic) => {
  * @returns {Array<string>} An array of new bullet list items.
  * @throws {Error} Throws an error if the OpenAI API request fails.
  */
-exports.generateMissingItems = async (topic, count) => {
+exports.generateMissingItems = async (prompt) => {
   try {
     const response = await openai.chat.completions.create({
       model: 'gpt-3.5-turbo',
@@ -48,7 +48,7 @@ exports.generateMissingItems = async (topic, count) => {
         },
         {
           role: 'user',
-          content: `Generate ${count} new bullet list items on the topic "${topic}". Do not enumerate the items.`,
+          content: prompt,
         },
       ],
       max_tokens: 150,
