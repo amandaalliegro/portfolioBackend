@@ -43,7 +43,7 @@ portfolio-backend/
 
 1. Clone the repository:
    ```bash
-   git clone [https://github.com/your-username/portfolio-backend.git](https://github.com/amandaalliegro/portfolioBackend)
+   git clone git@github.com:amandaalliegro/portfolioBackend.git
    ```
 
 2. Navigate to the project directory:
